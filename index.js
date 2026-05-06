@@ -1,4 +1,4 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const P = require('pino');
 const qrcode = require('qrcode-terminal');
 const axios = require('axios');
@@ -7,7 +7,7 @@ const path = require('path');
 const Groq = require('groq-sdk');
 
 // =========================
-// 🔥 IMPORTS LOCALES (TUS MISMOS ARCHIVOS)
+// 🔥 IMPORTS LOCALES
 // =========================
 const { buscarContexto, initRAG, isReady, getStats } = require('./rag/llama');
 const { detectarProducto, PRODUCTOS } = require('./rag/embeddings');
@@ -16,7 +16,7 @@ const { SALES_FLOWS, PRICES, SalesStateManager } = require('./sales-flows');
 // =========================
 // ⚙️ CONFIG
 // =========================
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxFXdw2C2fX4QAMGOPGPrYw-7VDKz6A6tf40aR9DDol3COWdFVPInSP6fH4W8acj261hQ/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyU4tmUKzQQQKrGcFYh0_6zocRLv3tCU5Exyrj0C7Tx5bR3eAKNx9Z-81gbb3qo7c6A/exec';
 const WEB_URL = 'https://labsurf.github.io/vitaminas/';
 
 // Groq setup
@@ -56,7 +56,7 @@ function logConversacion(numero, nombre, producto, estado, origen, textoUsuario,
 }
 
 // =========================
-// 🧠 ESTADOS (IDÉNTICO A TU VERSIÓN)
+// 🧠 ESTADOS
 // =========================
 const STATES = {
     INIT: 'init',
@@ -70,7 +70,7 @@ const processingUsers = new Set();
 const salesManager = new SalesStateManager();
 
 // =========================
-// 📣 DETECCIÓN DE CAMPAÑAS (IDÉNTICO)
+// 📣 DETECCIÓN DE CAMPAÑAS
 // =========================
 const CAMPAIGN_KEYWORDS = {
     'DIGESTIVO_FB': { producto: 'digestivo', origen: 'Facebook' },
@@ -85,7 +85,7 @@ const CAMPAIGN_KEYWORDS = {
 };
 
 // =========================
-// 🛡️ CIRCUIT BREAKER (IDÉNTICO)
+// 🛡️ CIRCUIT BREAKER
 // =========================
 const circuitBreaker = {
     failures: 0,
@@ -126,7 +126,7 @@ const circuitBreaker = {
 };
 
 // =========================
-// 🔥 PRELOAD RAG (IDÉNTICO)
+// 🔥 PRELOAD RAG
 // =========================
 (async () => {
     console.log('🔥 Iniciando sistema...');
@@ -153,7 +153,7 @@ function detectarCampana(texto) {
 }
 
 // =========================
-// 🧠 IA CON GROQ (IDÉNTICO A TU VERSIÓN)
+// 🧠 IA CON GROQ
 // =========================
 async function evaluarSituacionConIA(contexto) {
     const prompt = `Eres un vendedor profesional. Responde UNA SOLA PALABRA:
@@ -410,7 +410,7 @@ async function enviarCampana(sock) {
 }
 
 // =========================
-// 🤖 PROCESAR MENSAJE (IDÉNTICO A TU VERSIÓN)
+// 🤖 PROCESAR MENSAJE
 // =========================
 async function procesarMensaje(sock, message) {
     const t0 = Date.now();
@@ -844,22 +844,23 @@ Responde en máximo 3 líneas. Sé natural y cálido.`;
 }
 
 // =========================
-// 🚀 INICIAR BOT CON BAILEYS
+// 🚀 INICIAR BOT CON BAILEYS (VERSIÓN CORREGIDA)
 // =========================
 async function startBaileys() {
     const { state, saveCreds } = await useMultiFileAuthState('./baileys_auth');
 
     const sock = makeWASocket({
         auth: state,
-        printQRInTerminal: false,
-        logger: P({ level: 'silent' }),
-        browser: Browsers.macOS('Chrome'),
+        printQRInTerminal: true,
+        logger: P({ level: 'info' }),
+        browser: ['Labsurf Bot', 'Chrome', '1.0.0'],
         syncFullHistory: false,
-        markOnlineOnConnect: false
+        markOnlineOnConnect: true,
+        version: [2, 3000, 1015901307]
     });
 
     sock.ev.on('connection.update', (update) => {
-        const { connection, qr, lastDisconnect } = update;
+        const { connection, qr, lastDisconnect, isNewLogin } = update;
 
         if (qr) {
             console.log('📱 Escanea este código QR con WhatsApp:');
@@ -872,22 +873,27 @@ async function startBaileys() {
             console.log('💓 Esperando mensajes...\n');
             console.log(`💾 Memoria usada: ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(1)}MB`);
 
-            // Iniciar campañas automáticas
             setTimeout(() => enviarCampana(sock), 5000);
             setInterval(() => enviarCampana(sock), 15 * 60 * 1000);
 
-            // Heartbeat
             setInterval(() => {
                 console.log(`💓 Activo | Usuarios: ${Object.keys(userState).length} | Memoria: ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(1)}MB`);
             }, 30000);
         }
 
         if (connection === 'close') {
-            const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-            console.log('⚠️ Conexión cerrada', shouldReconnect ? 'reconectando...' : 'no reconectará');
+            const statusCode = lastDisconnect?.error?.output?.statusCode;
+            const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+            console.log(`⚠️ Conexión cerrada (${statusCode})`, shouldReconnect ? 'reconectando en 5s...' : 'no reconectará');
             if (shouldReconnect) {
                 setTimeout(startBaileys, 5000);
+            } else {
+                console.log('🔒 Sesión cerrada permanentemente. Elimina la carpeta baileys_auth/ para forzar nuevo QR.');
             }
+        }
+
+        if (isNewLogin) {
+            console.log('✅ Nuevo login detectado, sesión guardada');
         }
     });
 
@@ -897,7 +903,6 @@ async function startBaileys() {
             const user = msg.key.remoteJid;
             const texto = msg.message.conversation;
 
-            // Verificar si ya se está procesando este usuario
             const userBase = user.split('@')[0];
             if (processingUsers.has(userBase)) {
                 console.log(`⚠️ [${userBase}] Ya está procesando...`);
@@ -943,7 +948,6 @@ setInterval(() => {
     if (limpiados > 0) console.log(`🧹 Limpiados ${limpiados} usuarios inactivos`);
 }, 3600000);
 
-// Manejar cierre graceful
 process.on('SIGINT', () => {
     console.log('\n👋 Cerrando bot...');
     process.exit(0);

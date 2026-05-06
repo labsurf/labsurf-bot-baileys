@@ -5,17 +5,13 @@ const qrcode = require('qrcode-terminal');
 async function start() {
     const { state, saveCreds } = await useMultiFileAuthState('./baileys_auth');
     const sock = makeWASocket({
-    auth: state,
-    printQRInTerminal: true,
-    logger: Pino({ level: 'silent' }),
-    // ✨ La línea que soluciona el error 405 ✨
-    browser: Browsers.macOS('Desktop'),
+        auth: state,
+        logger: Pino({ level: 'silent' }),
+        browser: Browsers.macOS('Desktop'),
         syncFullHistory: false,
         markOnlineOnConnect: false,
         version: [2, 3000, 1015901307],
-        connectTimeoutMs: 30000,
-        defaultQueryTimeoutMs: 30000,
-        keepAliveIntervalMs: 10000
+        connectTimeoutMs: 60000
     });
 
     sock.ev.on('connection.update', (update) => {
@@ -25,8 +21,7 @@ async function start() {
             qrcode.generate(qr, { small: true });
         }
         if (connection === 'open') {
-            console.log('✅ Bot conectado correctamente');
-            // Aquí pondrías tu lógica de procesar mensajes
+            console.log('✅ Bot conectado correctamente (nuevo servicio)');
         }
         if (connection === 'close') {
             const statusCode = lastDisconnect?.error?.output?.statusCode;

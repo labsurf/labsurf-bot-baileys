@@ -847,25 +847,36 @@ Responde en máximo 3 líneas. Sé natural y cálido.`;
 // 🚀 INICIAR BOT CON BAILEYS (VERSIÓN CORREGIDA)
 // =========================
 async function startBaileys() {
-    const { state, saveCreds } = await useMultiFileAuthState('./baileys_auth');
+    // Eliminar sesión anterior para forzar nuevo registro
+    const authPath = './baileys_auth';
+    if (fs.existsSync(authPath)) {
+        fs.rmSync(authPath, { recursive: true, force: true });
+        console.log('🗑️ Sesión anterior eliminada');
+    }
+
+    const { state, saveCreds } = await useMultiFileAuthState(authPath);
 
     const sock = makeWASocket({
         auth: state,
-        printQRInTerminal: true,
-        logger: P({ level: 'info' }),
-        browser: ['Labsurf Bot', 'Chrome', '1.0.0'],
+        printQRInTerminal: false,
+        logger: P({ level: 'silent' }),
+        browser: ['Labsurf (Chrome)', 'Chrome', '130.0.6723.69'],
         syncFullHistory: false,
         markOnlineOnConnect: true,
-        version: [2, 3000, 1015901307]
+        version: [2, 3000, 1015901307],
+        connectTimeoutMs: 30000,
+        defaultQueryTimeoutMs: 30000,
+        keepAliveIntervalMs: 10000
     });
 
-    sock.ev.on('connection.update', (update) => {
+    sock.ev.on('connection.update', async (update) => {
         const { connection, qr, lastDisconnect, isNewLogin } = update;
 
         if (qr) {
             console.log('📱 Escanea este código QR con WhatsApp:');
             qrcode.generate(qr, { small: true });
             console.log('   Abre WhatsApp → Dispositivos vinculados → Vincular dispositivo');
+            console.log('   El QR expira rápidamente, escanéalo cuanto antes');
         }
 
         if (connection === 'open') {
@@ -877,18 +888,19 @@ async function startBaileys() {
             setInterval(() => enviarCampana(sock), 15 * 60 * 1000);
 
             setInterval(() => {
-                console.log(`💓 Activo | Usuarios: ${Object.keys(userState).length} | Memoria: ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(1)}MB`);
+                const activeUsers = Object.keys(userState).length;
+                console.log(`💓 Activo | Usuarios: ${activeUsers} | Memoria: ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(1)}MB`);
             }, 30000);
         }
 
         if (connection === 'close') {
             const statusCode = lastDisconnect?.error?.output?.statusCode;
             const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-            console.log(`⚠️ Conexión cerrada (${statusCode})`, shouldReconnect ? 'reconectando en 5s...' : 'no reconectará');
+            console.log(`⚠️ Conexión cerrada (${statusCode})`, shouldReconnect ? 'reconectando en 10s...' : 'no reconectará');
             if (shouldReconnect) {
-                setTimeout(startBaileys, 5000);
+                setTimeout(startBaileys, 10000);
             } else {
-                console.log('🔒 Sesión cerrada permanentemente. Elimina la carpeta baileys_auth/ para forzar nuevo QR.');
+                console.log('🔒 Sesión cerrada permanentemente.');
             }
         }
 

@@ -1,14 +1,15 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } = require('@whiskeysockets/baileys');
-const P = require('pino');
+const Pino = require('pino');
 const qrcode = require('qrcode-terminal');
 
 async function start() {
     const { state, saveCreds } = await useMultiFileAuthState('./baileys_auth');
     const sock = makeWASocket({
-        auth: state,
-        printQRInTerminal: false,
-        logger: P({ level: 'silent' }),
-        browser: Browsers.macOS('Desktop'), // solución al error 405
+    auth: state,
+    printQRInTerminal: true,
+    logger: Pino({ level: 'silent' }),
+    // ✨ La línea que soluciona el error 405 ✨
+    browser: Browsers.macOS('Desktop'),
         syncFullHistory: false,
         markOnlineOnConnect: false,
         version: [2, 3000, 1015901307],

@@ -16,7 +16,7 @@ const { SALES_FLOWS, PRICES, SalesStateManager } = require('./sales-flows');
 // =========================
 // ⚙️ CONFIG
 // =========================
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyU4tmUKzQQQKrGcFYh0_6zocRLv3tCU5Exyrj0C7Tx5bR3eAKNx9Z-81gbb3qo7c6A/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxFXdw2C2fX4QAMGOPGPrYw-7VDKz6A6tf40aR9DDol3COWdFVPInSP6fH4W8acj261hQ/exec';
 const WEB_URL = 'https://labsurf.github.io/vitaminas/';
 
 // Groq setup

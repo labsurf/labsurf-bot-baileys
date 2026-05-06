@@ -847,12 +847,12 @@ Responde en máximo 3 líneas. Sé natural y cálido.`;
 // 🚀 INICIAR BOT CON BAILEYS (VERSIÓN CORREGIDA)
 // =========================
 async function startBaileys() {
-    // Eliminar sesión anterior para forzar nuevo registro
-    const authPath = './baileys_auth';
-    if (fs.existsSync(authPath)) {
-        fs.rmSync(authPath, { recursive: true, force: true });
-        console.log('🗑️ Sesión anterior eliminada');
-    }
+    // Solo eliminar sesión si existe variable de entorno FORCE_NEW_QR
+	const authPath = './baileys_auth';
+	if (process.env.FORCE_NEW_QR === 'true' && fs.existsSync(authPath)) {
+	    fs.rmSync(authPath, { recursive: true, force: true });
+	    console.log('🗑️ Sesión eliminada por FORCE_NEW_QR');
+	}
 
     const { state, saveCreds } = await useMultiFileAuthState(authPath);
 
